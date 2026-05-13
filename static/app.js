@@ -267,8 +267,18 @@ function populateForm(entry) {
   // Exercise
   const pu = $('pushups');
   const sq = $('squats');
-  if (pu) { pu.value = entry.pushups_done; updateExerciseFeedback('pushups', entry.pushups_done); }
-  if (sq) { sq.value = entry.squats_done;  updateExerciseFeedback('squats',  entry.squats_done);  }
+  if (pu) {
+    pu.value = entry.pushups_done;
+    updateExerciseFeedback('pushups', entry.pushups_done);
+    const puBtn = document.querySelector('.complete-btn[data-exercise="pushups"]');
+    if (puBtn) puBtn.classList.toggle('done', entry.pushups_done >= (state.goals.pushups?.current_goal || 0) && entry.pushups_done > 0);
+  }
+  if (sq) {
+    sq.value = entry.squats_done;
+    updateExerciseFeedback('squats', entry.squats_done);
+    const sqBtn = document.querySelector('.complete-btn[data-exercise="squats"]');
+    if (sqBtn) sqBtn.classList.toggle('done', entry.squats_done >= (state.goals.squats?.current_goal || 0) && entry.squats_done > 0);
+  }
 
   // Notes
   const notes = $('notes');
@@ -693,6 +703,25 @@ function setupEventListeners() {
     if (!inp) return;
     inp.addEventListener('input', () => {
       updateExerciseFeedback(ex, +inp.value || 0);
+      // Update complete button state
+      const btn = document.querySelector(`.complete-btn[data-exercise="${ex}"]`);
+      if (btn) {
+        const goal = state.goals[ex]?.current_goal || 0;
+        btn.classList.toggle('done', +inp.value >= goal && +inp.value > 0);
+      }
+    });
+  });
+
+  // Complete (hit goal) buttons
+  document.querySelectorAll('.complete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ex   = btn.dataset.exercise;
+      const goal = state.goals[ex]?.current_goal || 0;
+      if (!goal) return;
+      const inp  = $(ex);
+      inp.value  = goal;
+      btn.classList.add('done');
+      updateExerciseFeedback(ex, goal);
     });
   });
 
