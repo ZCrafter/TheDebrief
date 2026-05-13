@@ -128,8 +128,8 @@
               <label class="field-label">Happiness</label>
               <span class="slider-value" id="happiness-val">5</span>
             </div>
-            <input type="range" id="happiness" name="happiness" min="1" max="10" value="5" class="slider slider-green" />
-            <div class="slider-ticks"><span>1</span><span>5</span><span>10</span></div>
+            <input type="range" id="happiness" name="happiness" min="0" max="10" value="5" class="slider slider-green" />
+            <div class="slider-ticks"><span>0</span><span>5</span><span>10</span></div>
           </div>
 
           <div class="field-stack slider-field">
@@ -137,8 +137,8 @@
               <label class="field-label">Stress</label>
               <span class="slider-value" id="stress-val">5</span>
             </div>
-            <input type="range" id="stress" name="stress" min="1" max="10" value="5" class="slider slider-red" />
-            <div class="slider-ticks"><span>1</span><span>5</span><span>10</span></div>
+            <input type="range" id="stress" name="stress" min="0" max="10" value="5" class="slider slider-red" />
+            <div class="slider-ticks"><span>0</span><span>5</span><span>10</span></div>
           </div>
         </div>
 
@@ -165,6 +165,7 @@
             </div>
             <div class="exercise-input-row">
               <input type="number" id="pushups" name="pushups_done" min="0" max="9999" value="0" class="num-input" placeholder="0" />
+              <button type="button" class="complete-btn" data-exercise="pushups">✓ Hit Goal</button>
               <div class="exercise-feedback" id="pushups-feedback"></div>
             </div>
             <div class="progress-track">
@@ -181,6 +182,7 @@
             </div>
             <div class="exercise-input-row">
               <input type="number" id="squats" name="squats_done" min="0" max="9999" value="0" class="num-input" placeholder="0" />
+              <button type="button" class="complete-btn" data-exercise="squats">✓ Hit Goal</button>
               <div class="exercise-feedback" id="squats-feedback"></div>
             </div>
             <div class="progress-track">
