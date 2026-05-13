@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Daily Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ── Loading ───────────────────────────────────────────────── -->
+<div id="loading-screen">
+  <div class="loader-inner">
+    <div class="loader-ring"></div>
+    <span>Loading…</span>
+  </div>
+</div>
+
+<!-- ── App Shell ─────────────────────────────────────────────── -->
+<div id="app" hidden>
+
+  <!-- Header -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="app-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="app-title">Daily Log</h1>
+        <p class="app-date" id="header-date"></p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tab Panels -->
+  <main id="tab-container">
+
+    <!-- ══ TODAY ══════════════════════════════════════════════ -->
+    <section id="tab-today" class="tab-panel active" role="tabpanel">
+
+      <!-- Goal Banner -->
+      <div class="goal-banner" id="goal-banner">
+        <div class="goal-card" id="goal-pushups-card">
+          <div class="goal-label">PUSHUPS GOAL</div>
+          <div class="goal-value" id="goal-pushups-num">—</div>
+          <div class="goal-streak" id="goal-pushups-streak"></div>
+        </div>
+        <div class="goal-divider"></div>
+        <div class="goal-card" id="goal-squats-card">
+          <div class="goal-label">SQUATS GOAL</div>
+          <div class="goal-value" id="goal-squats-num">—</div>
+          <div class="goal-streak" id="goal-squats-streak"></div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id="entry-form" novalidate>
+
+        <!-- ─ Hydration ─ -->
+        <div class="form-section" data-accent="water">
+          <div class="section-header">
+            <span class="section-icon">💧</span>
+            <span class="section-title">Hydration &amp; Intake</span>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Water Bottles</label>
+            <div class="stepper" data-field="water_bottles" data-step="0.5" data-min="0" data-max="20">
+              <button type="button" class="step-btn step-down">−</button>
+              <span class="step-value">0</span>
+              <button type="button" class="step-btn step-up">+</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Coffee <span class="field-unit">cups</span></label>
+            <div class="stepper" data-field="coffee" data-step="0.5" data-min="0" data-max="20">
+              <button type="button" class="step-btn step-down">−</button>
+              <span class="step-value">0</span>
+              <button type="button" class="step-btn step-up">+</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Alcohol <span class="field-unit">drinks</span></label>
+            <div class="stepper" data-field="alcohol" data-step="1" data-min="0" data-max="20">
+              <button type="button" class="step-btn step-down">−</button>
+              <span class="step-value">0</span>
+              <button type="button" class="step-btn step-up">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ Mindset ─ -->
+        <div class="form-section" data-accent="mindset">
+          <div class="section-header">
+            <span class="section-icon">🧠</span>
+            <span class="section-title">Mindset</span>
+          </div>
+
+          <div class="field-stack">
+            <label class="field-label" for="self-improvement">What did I do today to make myself better?</label>
+            <textarea id="self-improvement" name="self_improvement" rows="3" placeholder="Write anything…" class="textarea"></textarea>
+          </div>
+
+          <div class="field-stack slider-field">
+            <div class="slider-header">
+              <label class="field-label">Happiness</label>
+              <span class="slider-value" id="happiness-val">5</span>
+            </div>
+            <input type="range" id="happiness" name="happiness" min="1" max="10" value="5" class="slider slider-green" />
+            <div class="slider-ticks"><span>1</span><span>5</span><span>10</span></div>
+          </div>
+
+          <div class="field-stack slider-field">
+            <div class="slider-header">
+              <label class="field-label">Stress</label>
+              <span class="slider-value" id="stress-val">5</span>
+            </div>
+            <input type="range" id="stress" name="stress" min="1" max="10" value="5" class="slider slider-red" />
+            <div class="slider-ticks"><span>1</span><span>5</span><span>10</span></div>
+          </div>
+        </div>
+
+        <!-- ─ Movement ─ -->
+        <div class="form-section" data-accent="energy">
+          <div class="section-header">
+            <span class="section-icon">🏋️</span>
+            <span class="section-title">Movement</span>
+          </div>
+
+          <div class="field-row toggle-row">
+            <label class="field-label">Stretching</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="stretching" name="stretching" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+
+          <!-- Pushups -->
+          <div class="exercise-field" id="pushups-field">
+            <div class="exercise-header">
+              <label class="field-label">Pushups</label>
+              <span class="exercise-goal-badge" id="pushups-badge">Goal: —</span>
+            </div>
+            <div class="exercise-input-row">
+              <input type="number" id="pushups" name="pushups_done" min="0" max="9999" value="0" class="num-input" placeholder="0" />
+              <div class="exercise-feedback" id="pushups-feedback"></div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="pushups-progress" style="width:0%"></div>
+            </div>
+            <div class="projected-goal" id="pushups-projected"></div>
+          </div>
+
+          <!-- Squats -->
+          <div class="exercise-field" id="squats-field">
+            <div class="exercise-header">
+              <label class="field-label">Squats</label>
+              <span class="exercise-goal-badge" id="squats-badge">Goal: —</span>
+            </div>
+            <div class="exercise-input-row">
+              <input type="number" id="squats" name="squats_done" min="0" max="9999" value="0" class="num-input" placeholder="0" />
+              <div class="exercise-feedback" id="squats-feedback"></div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="squats-progress" style="width:0%"></div>
+            </div>
+            <div class="projected-goal" id="squats-projected"></div>
+          </div>
+        </div>
+
+        <!-- ─ Custom Fields ─ -->
+        <div class="form-section" data-accent="custom" id="custom-fields-section" style="display:none">
+          <div class="section-header">
+            <span class="section-icon">✦</span>
+            <span class="section-title">Custom Tracking</span>
+          </div>
+          <div id="custom-fields-inputs"></div>
+        </div>
+
+        <!-- ─ Notes ─ -->
+        <div class="form-section" data-accent="notes">
+          <div class="section-header">
+            <span class="section-icon">📝</span>
+            <span class="section-title">Notes</span>
+          </div>
+          <textarea id="notes" name="notes" rows="2" placeholder="Anything else worth noting…" class="textarea"></textarea>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-wrap">
+          <button type="submit" class="submit-btn" id="submit-btn">
+            <span class="submit-text">Save Today's Entry</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <p class="submit-note" id="last-saved-note"></p>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ══ HISTORY ════════════════════════════════════════════ -->
+    <section id="tab-history" class="tab-panel" role="tabpanel" hidden>
+      <div class="stats-row" id="stats-row">
+        <div class="stat-chip" id="stat-streak">
+          <span class="stat-num">—</span>
+          <span class="stat-lbl">Day Streak</span>
+        </div>
+        <div class="stat-chip" id="stat-entries">
+          <span class="stat-num">—</span>
+          <span class="stat-lbl">Total Entries</span>
+        </div>
+        <div class="stat-chip" id="stat-happiness">
+          <span class="stat-num">—</span>
+          <span class="stat-lbl">Avg Happiness</span>
+        </div>
+        <div class="stat-chip" id="stat-stress">
+          <span class="stat-num">—</span>
+          <span class="stat-lbl">Avg Stress</span>
+        </div>
+      </div>
+
+      <div class="section-header" style="padding: 0 1rem; margin-bottom: 0.5rem;">
+        <span class="section-title">Past Entries</span>
+      </div>
+
+      <div id="history-list" class="history-list">
+        <div class="empty-state">No entries yet. Fill out today's log!</div>
+      </div>
+    </section>
+
+    <!-- ══ SETTINGS ═══════════════════════════════════════════ -->
+    <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
+
+      <!-- Goal Overrides -->
+      <div class="form-section" data-accent="energy">
+        <div class="section-header">
+          <span class="section-icon">🎯</span>
+          <span class="section-title">Override Exercise Goals</span>
+        </div>
+        <p class="section-note">Manually set a goal — this resets consecutive hit streaks.</p>
+
+        <div class="field-row">
+          <label class="field-label">Pushup Goal</label>
+          <div class="goal-override-row">
+            <input type="number" id="override-pushups" class="num-input small" min="1" max="9999" placeholder="—" />
+            <button type="button" class="pill-btn" onclick="applyGoalOverride('pushups')">Set</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Squat Goal</label>
+          <div class="goal-override-row">
+            <input type="number" id="override-squats" class="num-input small" min="1" max="9999" placeholder="—" />
+            <button type="button" class="pill-btn" onclick="applyGoalOverride('squats')">Set</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Fields -->
+      <div class="form-section" data-accent="custom">
+        <div class="section-header">
+          <span class="section-icon">✦</span>
+          <span class="section-title">Custom Fields</span>
+          <button type="button" class="icon-btn add-field-btn" id="add-field-btn" title="Add field">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Add field form (hidden by default) -->
+        <div id="add-field-form" class="add-field-form" style="display:none">
+          <input type="text" id="new-field-name" class="text-input" placeholder="Field name (e.g. Steps, Meditation)" maxlength="40" />
+          <div class="field-row" style="gap:0.5rem">
+            <select id="new-field-type" class="select-input">
+              <option value="number">Number</option>
+              <option value="boolean">Yes / No</option>
+              <option value="text">Text</option>
+              <option value="rating">Rating (1–5)</option>
+            </select>
+            <input type="text" id="new-field-unit" class="text-input small" placeholder="Unit (optional)" maxlength="10" />
+          </div>
+          <div class="add-field-actions">
+            <button type="button" class="pill-btn" id="save-field-btn">Add Field</button>
+            <button type="button" class="pill-btn ghost" id="cancel-field-btn">Cancel</button>
+          </div>
+        </div>
+
+        <div id="custom-fields-list" class="custom-fields-list">
+          <p class="empty-note">No custom fields yet. Add one above!</p>
+        </div>
+      </div>
+
+      <!-- Export -->
+      <div class="form-section" data-accent="water">
+        <div class="section-header">
+          <span class="section-icon">📤</span>
+          <span class="section-title">Export Data</span>
+        </div>
+        <div class="export-row">
+          <button type="button" class="pill-btn" onclick="exportCSV()">Download CSV</button>
+          <a class="pill-btn ghost" href="/api/entries?limit=9999" target="_blank">Raw JSON API</a>
+        </div>
+        <p class="section-note">All data is stored in <code>/data/health_tracker.db</code> on the host.</p>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+    <button class="nav-btn active" data-tab="today" aria-selected="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <span>Today</span>
+    </button>
+    <button class="nav-btn" data-tab="history" aria-selected="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      <span>History</span>
+    </button>
+    <button class="nav-btn" data-tab="settings" aria-selected="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ── Success Toast ──────────────────────────────────────────── -->
+<div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+<!-- ── Entry Detail Modal ─────────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay" hidden>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Entry</h2>
+      <button class="icon-btn" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
