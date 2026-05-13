@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  health-tracker:
+    build: .
+    container_name: health-tracker
+    restart: unless-stopped
+    ports:
+      - "5400:5400"
+    volumes:
+      - health-tracker-data:/data
+    environment:
+      - DATABASE_PATH=/data/health_tracker.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5400/api/stats')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  health-tracker-data:
+    driver: local
