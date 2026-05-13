@@ -519,6 +519,28 @@ input[type="range"].slider::-moz-range-thumb {
 .exercise-feedback.hit  { color: var(--wellness); }
 .exercise-feedback.miss { color: var(--danger); }
 
+.complete-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  height: 44px;
+  padding: 0 0.85rem;
+  background: var(--energy-glow);
+  color: var(--energy);
+  border: 1.5px solid var(--energy);
+  border-radius: var(--r-sm);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur), transform var(--dur);
+  flex-shrink: 0;
+}
+.complete-btn:hover  { background: var(--energy); color: #fff; }
+.complete-btn:active { transform: scale(0.96); }
+.complete-btn.done   { background: var(--wellness); border-color: var(--wellness); color: #fff; }
+
 .progress-track {
   height: 5px;
   background: var(--surface-3);
