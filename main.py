@@ -83,10 +83,16 @@ def init_db():
         field_key  TEXT UNIQUE NOT NULL,
         field_type TEXT NOT NULL DEFAULT 'number',
         unit       TEXT DEFAULT '',
+        group_name TEXT DEFAULT 'Custom',
         sort_order INTEGER DEFAULT 0,
         active     INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )""")
+    # Migration: add group_name to existing databases
+    try:
+        c.execute("ALTER TABLE custom_fields ADD COLUMN group_name TEXT DEFAULT 'Custom'")
+    except Exception:
+        pass  # Column already exists
 
     # Seed default goals
     c.execute("INSERT OR IGNORE INTO exercise_goals (exercise, current_goal, starting_goal) VALUES ('pushups', 10, 10)")
@@ -181,6 +187,7 @@ class CustomFieldCreate(BaseModel):
     name: str
     field_type: str = "number"   # number | boolean | text | rating
     unit: str = ""
+    group_name: str = "Custom"
 
 
 class GoalPreviewRequest(BaseModel):
@@ -363,8 +370,8 @@ def create_custom_field(field: CustomFieldCreate):
     conn = get_db()
     try:
         conn.execute(
-            "INSERT INTO custom_fields (name, field_key, field_type, unit) VALUES (?, ?, ?, ?)",
-            (field.name.strip(), key, field.field_type, field.unit.strip()),
+            "INSERT INTO custom_fields (name, field_key, field_type, unit, group_name) VALUES (?, ?, ?, ?, ?)",
+            (field.name.strip(), key, field.field_type, field.unit.strip(), field.group_name.strip() or "Custom"),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM custom_fields WHERE field_key = ?", (key,)).fetchone()
