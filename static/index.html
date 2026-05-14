@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Daily Tracker</title>
+  <title>The Debrief</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 </head>
 <body>
 
@@ -33,7 +34,8 @@
         </svg>
       </div>
       <div>
-        <h1 class="app-title">Daily Log</h1>
+        <h1 class="app-title">The Debrief</h1>
+        <p class="app-subtitle">Daily Log</p>
         <p class="app-date" id="header-date"></p>
       </div>
     </div>
@@ -84,8 +86,8 @@
           </div>
 
           <div class="field-row">
-            <label class="field-label">Water Bottles</label>
-            <div class="stepper" data-field="water_bottles" data-step="0.5" data-min="0" data-max="20">
+            <label class="field-label">Water Bottles <span class="field-unit">at work</span></label>
+            <div class="stepper" data-field="water_bottles" data-step="1" data-min="0" data-max="20">
               <button type="button" class="step-btn step-down">−</button>
               <span class="step-value">0</span>
               <button type="button" class="step-btn step-up">+</button>
@@ -94,7 +96,7 @@
 
           <div class="field-row">
             <label class="field-label">Coffee <span class="field-unit">cups</span></label>
-            <div class="stepper" data-field="coffee" data-step="0.5" data-min="0" data-max="20">
+            <div class="stepper" data-field="coffee" data-step="1" data-min="0" data-max="20">
               <button type="button" class="step-btn step-down">−</button>
               <span class="step-value">0</span>
               <button type="button" class="step-btn step-up">+</button>
@@ -126,19 +128,21 @@
           <div class="field-stack slider-field">
             <div class="slider-header">
               <label class="field-label">Happiness</label>
-              <span class="slider-value" id="happiness-val">5</span>
+              <span class="slider-value" id="happiness-val">3</span>
             </div>
-            <input type="range" id="happiness" name="happiness" min="0" max="10" value="5" class="slider slider-green" />
-            <div class="slider-ticks"><span>0</span><span>5</span><span>10</span></div>
+            <input type="range" id="happiness" name="happiness" min="1" max="5" value="3" class="slider slider-green" />
+            <div class="slider-ticks"><span>1</span><span>3</span><span>5</span></div>
+            <div class="slider-mood-label" id="happiness-label">Average</div>
           </div>
 
           <div class="field-stack slider-field">
             <div class="slider-header">
               <label class="field-label">Stress</label>
-              <span class="slider-value" id="stress-val">5</span>
+              <span class="slider-value" id="stress-val">3</span>
             </div>
-            <input type="range" id="stress" name="stress" min="0" max="10" value="5" class="slider slider-red" />
-            <div class="slider-ticks"><span>0</span><span>5</span><span>10</span></div>
+            <input type="range" id="stress" name="stress" min="1" max="5" value="3" class="slider slider-red" />
+            <div class="slider-ticks"><span>1</span><span>3</span><span>5</span></div>
+            <div class="slider-mood-label" id="stress-label">Average</div>
           </div>
         </div>
 
@@ -192,14 +196,8 @@
           </div>
         </div>
 
-        <!-- ─ Custom Fields ─ -->
-        <div class="form-section" data-accent="custom" id="custom-fields-section" style="display:none">
-          <div class="section-header">
-            <span class="section-icon">✦</span>
-            <span class="section-title">Custom Tracking</span>
-          </div>
-          <div id="custom-fields-inputs"></div>
-        </div>
+        <!-- ─ Custom Fields (grouped, rendered dynamically) ─ -->
+        <div id="custom-fields-container"></div>
 
         <!-- ─ Notes ─ -->
         <div class="form-section" data-accent="notes">
@@ -246,6 +244,25 @@
       </div>
 
       <div class="section-header" style="padding: 0 1rem; margin-bottom: 0.5rem;">
+        <span class="section-title">Charts</span>
+      </div>
+
+      <div class="charts-list">
+        <div class="chart-block">
+          <div class="chart-title">😊 Mood Over Time</div>
+          <div class="chart-wrap"><canvas id="chart-mood"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">🏋️ Exercise Volume</div>
+          <div class="chart-wrap"><canvas id="chart-exercise"></canvas></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">💧 Hydration &amp; Intake</div>
+          <div class="chart-wrap"><canvas id="chart-hydration"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-header" style="padding: 0 1rem; margin-bottom: 0.5rem; margin-top: 0.5rem;">
         <span class="section-title">Past Entries</span>
       </div>
 
@@ -296,15 +313,24 @@
         <!-- Add field form (hidden by default) -->
         <div id="add-field-form" class="add-field-form" style="display:none">
           <input type="text" id="new-field-name" class="text-input" placeholder="Field name (e.g. Steps, Meditation)" maxlength="40" />
-          <div class="field-row" style="gap:0.5rem">
+          <div class="field-row" style="gap:0.5rem; padding:0; border:none;">
             <select id="new-field-type" class="select-input">
               <option value="number">Number</option>
               <option value="boolean">Yes / No</option>
               <option value="text">Text</option>
               <option value="rating">Rating (1–5)</option>
             </select>
-            <input type="text" id="new-field-unit" class="text-input small" placeholder="Unit (optional)" maxlength="10" />
+            <input type="text" id="new-field-unit" class="text-input small" placeholder="Unit" maxlength="10" />
           </div>
+          <input type="text" id="new-field-group" class="text-input" placeholder="Section / Group (e.g. Mindset, Sleep)" maxlength="40" list="group-suggestions" />
+          <datalist id="group-suggestions">
+            <option value="Hydration &amp; Intake">
+            <option value="Mindset">
+            <option value="Movement">
+            <option value="Sleep">
+            <option value="Nutrition">
+            <option value="Custom">
+          </datalist>
           <div class="add-field-actions">
             <button type="button" class="pill-btn" id="save-field-btn">Add Field</button>
             <button type="button" class="pill-btn ghost" id="cancel-field-btn">Cancel</button>
