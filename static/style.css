@@ -201,10 +201,15 @@ a { color: var(--accent); text-decoration: none; }
   letter-spacing: 0.04em;
   line-height: 1.1;
 }
-.app-date {
-  font-size: 0.75rem;
+.app-subtitle {
+  font-size: 0.7rem;
   color: var(--text-muted);
-  letter-spacing: 0.03em;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.app-date {
+  display: none; /* replaced by subtitle */
 }
 .header-right { display: flex; gap: 0.5rem; }
 
@@ -404,6 +409,40 @@ a { color: var(--accent); text-decoration: none; }
   color: var(--text-muted);
   padding: 0 2px;
   margin-top: 2px;
+}
+.slider-mood-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--section-accent, var(--accent));
+  text-align: right;
+  min-height: 1.1em;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ── Charts ──────────────────────────────────────────────── */
+.charts-list {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  padding: 0 0.75rem;
+}
+.chart-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0.9rem 1rem 1rem;
+}
+.chart-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+.chart-wrap {
+  position: relative;
+  height: 180px;
 }
 
 input[type="range"].slider {
@@ -632,6 +671,11 @@ input[type="range"].slider::-moz-range-thumb {
 .submit-btn:active { transform: scale(0.98); }
 .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 .submit-btn.saving { pointer-events: none; }
+.submit-btn.saved {
+  background: var(--wellness) !important;
+  box-shadow: 0 4px 18px var(--wellness-glow) !important;
+  pointer-events: none;
+}
 .submit-note {
   text-align: center;
   font-size: 0.78rem;
