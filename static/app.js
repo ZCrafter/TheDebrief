@@ -17,7 +17,10 @@ const state = {
 
 // ─── Helpers ──────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
 
 function fmtDate(isoStr) {
   const d = new Date(isoStr + 'T00:00:00');
@@ -123,35 +126,73 @@ async function loadCustomFields() {
 }
 
 function renderCustomFieldInputs() {
-  const container = $('custom-fields-inputs');
-  const section   = $('custom-fields-section');
+  const container = $('custom-fields-container');
   if (!container) return;
 
   if (!state.customFields.length) {
-    section.style.display = 'none';
     container.innerHTML = '';
     return;
   }
-  section.style.display = '';
 
-  container.innerHTML = state.customFields.map(f => {
-    const savedVal = state.todayEntry?.custom_data?.[f.field_key];
-    return `<div class="custom-input-row" data-key="${f.field_key}">
-      <label class="field-label">${f.name}${f.unit ? ` <span class="field-unit">${f.unit}</span>` : ''}</label>
-      ${buildCustomInput(f, savedVal)}
+  // Group fields by group_name
+  const groups = {};
+  state.customFields.forEach(f => {
+    const g = f.group_name || 'Custom';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(f);
+  });
+
+  const accentMap = {
+    'Hydration & Intake': 'water', 'Mindset': 'mindset', 'Movement': 'energy',
+    'Sleep': 'mindset', 'Nutrition': 'water',
+  };
+  const iconMap = {
+    'Hydration & Intake': '💧', 'Mindset': '🧠', 'Movement': '🏋️',
+    'Sleep': '🌙', 'Nutrition': '🥗',
+  };
+
+  container.innerHTML = Object.entries(groups).map(([groupName, fields]) => {
+    const accent = accentMap[groupName] || 'custom';
+    const icon   = iconMap[groupName]   || '✦';
+    return `<div class="form-section" data-accent="${accent}" style="margin-top:0.75rem">
+      <div class="section-header">
+        <span class="section-icon">${icon}</span>
+        <span class="section-title">${escHtml(groupName)}</span>
+      </div>
+      ${fields.map(f => {
+        const savedVal = state.todayEntry?.custom_data?.[f.field_key];
+        return `<div class="custom-input-row" data-key="${f.field_key}">
+          <label class="field-label">${escHtml(f.name)}${f.unit ? ` <span class="field-unit">${escHtml(f.unit)}</span>` : ''}</label>
+          ${buildCustomInput(f, savedVal)}
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
 
-  // Wire up boolean toggles & rating stars
+  // Wire up booleans and rating stars
   state.customFields.forEach(f => {
-    if (f.field_type === 'boolean') {
-      const cb = container.querySelector(`[data-key="${f.field_key}"] input[type="checkbox"]`);
-      if (cb && state.todayEntry?.custom_data?.[f.field_key]) cb.checked = true;
-    }
     if (f.field_type === 'rating') {
-      const row = container.querySelector(`[data-key="${f.field_key}"] .rating-stars`);
+      const row = container.querySelector(`.rating-stars[data-custom-key="${f.field_key}"]`);
       if (row) wireRatingStars(row, state.todayEntry?.custom_data?.[f.field_key] || 0);
     }
+  });
+
+  // Re-init any new steppers inside custom container
+  container.querySelectorAll('.stepper').forEach(stepper => {
+    if (stepper._wired) return;
+    stepper._wired = true;
+    const step = parseFloat(stepper.dataset.step) || 1;
+    const min  = parseFloat(stepper.dataset.min)  || 0;
+    const max  = parseFloat(stepper.dataset.max)  || 9999;
+    stepper._value = parseFloat(stepper.querySelector('.step-value').textContent) || 0;
+    stepper.querySelector('.step-down').addEventListener('click', () => {
+      stepper._value = Math.max(min, stepper._value - step);
+      stepper.querySelector('.step-value').textContent = Math.round(stepper._value);
+    });
+    stepper.querySelector('.step-up').addEventListener('click', () => {
+      stepper._value = Math.min(max, stepper._value + step);
+      stepper.querySelector('.step-value').textContent = Math.round(stepper._value);
+    });
   });
 }
 
@@ -201,7 +242,7 @@ function renderCustomFieldsList() {
     <div class="custom-field-chip" data-id="${f.id}">
       <div class="chip-info">
         <span class="chip-name">${escHtml(f.name)}${f.unit ? ` <span class="field-unit">${escHtml(f.unit)}</span>` : ''}</span>
-        <span class="chip-meta">${f.field_type}</span>
+        <span class="chip-meta">${f.field_type} · ${escHtml(f.group_name || 'Custom')}</span>
       </div>
       <button class="chip-delete" data-id="${f.id}" title="Remove field">✕</button>
     </div>
@@ -213,18 +254,20 @@ function renderCustomFieldsList() {
 }
 
 async function addCustomField() {
-  const name = $('new-field-name').value.trim();
-  const type = $('new-field-type').value;
-  const unit = $('new-field-unit').value.trim();
+  const name  = $('new-field-name').value.trim();
+  const type  = $('new-field-type').value;
+  const unit  = $('new-field-unit').value.trim();
+  const group = $('new-field-group').value.trim() || 'Custom';
   if (!name) { showToast('Enter a field name', 'error'); return; }
 
   try {
-    await API.post('/api/custom-fields', { name, field_type: type, unit });
-    $('new-field-name').value = '';
-    $('new-field-unit').value = '';
+    await API.post('/api/custom-fields', { name, field_type: type, unit, group_name: group });
+    $('new-field-name').value  = '';
+    $('new-field-unit').value  = '';
+    $('new-field-group').value = '';
     $('add-field-form').style.display = 'none';
     await loadCustomFields();
-    showToast(`"${name}" added`, 'success');
+    showToast(`"${name}" added to ${group}`, 'success');
   } catch (e) {
     showToast('Failed to add field', 'error');
   }
@@ -253,8 +296,18 @@ function populateForm(entry) {
   // Sliders
   const happinessEl = $('happiness');
   const stressEl    = $('stress');
-  if (happinessEl) { happinessEl.value = entry.happiness; $('happiness-val').textContent = entry.happiness; updateSliderFill(happinessEl); }
-  if (stressEl)    { stressEl.value    = entry.stress;    $('stress-val').textContent    = entry.stress;    updateSliderFill(stressEl); }
+  if (happinessEl) {
+    happinessEl.value = entry.happiness;
+    $('happiness-val').textContent = entry.happiness;
+    $('happiness-label').textContent = getMoodLabel('happiness', +entry.happiness);
+    updateSliderFill(happinessEl);
+  }
+  if (stressEl) {
+    stressEl.value = entry.stress;
+    $('stress-val').textContent = entry.stress;
+    $('stress-label').textContent = getMoodLabel('stress', +entry.stress);
+    updateSliderFill(stressEl);
+  }
 
   // Self-improvement textarea
   const si = $('self-improvement');
@@ -326,19 +379,29 @@ function setupSteppers() {
   });
 }
 
-// ─── Sliders ──────────────────────────────────────────────
+// ─── Slider Labels ────────────────────────────────────────
+const HAPPINESS_LABELS = { 1: 'Rough day', 2: 'Below average', 3: 'Average', 4: 'Pretty good', 5: 'Fantastic!' };
+const STRESS_LABELS    = { 1: 'Very calm',  2: 'Mostly calm',  3: 'Average', 4: 'Quite stressed', 5: 'Overwhelmed' };
+
+function getMoodLabel(id, val) {
+  return id === 'happiness' ? (HAPPINESS_LABELS[val] || '') : (STRESS_LABELS[val] || '');
+}
+
 function updateSliderFill(el) {
   const pct = ((+el.value - +el.min) / (+el.max - +el.min)) * 100;
   el.style.background = `linear-gradient(to right, var(--section-accent, var(--accent)) ${pct}%, var(--surface-3) ${pct}%)`;
 }
 
 function setupSliders() {
-  [['happiness', 'happiness-val'], ['stress', 'stress-val']].forEach(([id, valId]) => {
-    const el = $(id);
+  [['happiness', 'happiness-val', 'happiness-label'], ['stress', 'stress-val', 'stress-label']].forEach(([id, valId, lblId]) => {
+    const el  = $(id);
+    const lbl = $(lblId);
     if (!el) return;
     updateSliderFill(el);
+    if (lbl) lbl.textContent = getMoodLabel(id, +el.value);
     el.addEventListener('input', () => {
       $(valId).textContent = el.value;
+      if (lbl) lbl.textContent = getMoodLabel(id, +el.value);
       updateSliderFill(el);
     });
   });
@@ -458,7 +521,17 @@ async function submitEntry(e) {
     }
 
     $('last-saved-note').textContent = 'Saved just now ✓';
-    btn.querySelector('.submit-text').textContent = 'Update Today\'s Entry';
+
+    // Green flash animation
+    btn.classList.add('saved');
+    btn.querySelector('.submit-text').textContent = '✓ Saved!';
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      btn.querySelector('.submit-text').textContent = 'Update Today\'s Entry';
+    }, 2000);
+
+    // Reset form to defaults
+    resetFormToDefaults();
 
     // Show summary toast
     const gu = result.goal_updates || {};
@@ -472,8 +545,9 @@ async function submitEntry(e) {
     });
     showToast(msgs.length ? msgs.join(' · ') : '✓ Entry saved!', 'success');
 
-    // Invalidate history cache
+    // Invalidate history cache so charts and list refresh next visit
     state.historyLoaded = false;
+    destroyCharts();
 
   } catch (err) {
     console.error(err);
@@ -485,7 +559,153 @@ async function submitEntry(e) {
   }
 }
 
-// ─── History Tab ──────────────────────────────────────────
+// ─── Reset Form ───────────────────────────────────────────
+function resetFormToDefaults() {
+  // Steppers
+  ['water_bottles','coffee','alcohol'].forEach(f => setStepperValue(f, 0));
+
+  // Sliders back to 3
+  ['happiness','stress'].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.value = 3;
+    $(`${id}-val`).textContent  = '3';
+    $(`${id}-label`).textContent = getMoodLabel(id, 3);
+    updateSliderFill(el);
+  });
+
+  // Textareas
+  const si = $('self-improvement');
+  const notes = $('notes');
+  if (si)    si.value    = '';
+  if (notes) notes.value = '';
+
+  // Stretching
+  const stretch = $('stretching');
+  if (stretch) stretch.checked = false;
+
+  // Exercise inputs
+  ['pushups','squats'].forEach(id => {
+    const inp = $(id);
+    if (!inp) return;
+    inp.value = 0;
+    updateExerciseFeedback(id, 0);
+    const btn = document.querySelector(`.complete-btn[data-exercise="${id}"]`);
+    if (btn) btn.classList.remove('done');
+  });
+
+  // Custom fields — re-render with no saved data
+  const savedEntry = state.todayEntry;
+  state.todayEntry = null;
+  renderCustomFieldInputs();
+  state.todayEntry = savedEntry; // restore so history still works
+}
+
+// ─── Charts ───────────────────────────────────────────────
+const chartInstances = {};
+
+function destroyCharts() {
+  Object.values(chartInstances).forEach(c => c.destroy());
+  Object.keys(chartInstances).forEach(k => delete chartInstances[k]);
+}
+
+function chartColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    wellness: '#34d399', danger: '#f87171', accent: '#38bdf8',
+    energy: '#fb923c',  mindset: '#a78bfa', warning: '#fbbf24',
+    custom: '#f472b6',  muted: '#64748b',   grid: 'rgba(148,163,184,0.08)',
+  };
+}
+
+function baseChartOptions(yMin, yMax, yStep) {
+  const c = chartColors();
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: {
+      legend: { labels: { color: c.muted, font: { family: 'Barlow', size: 11 }, boxWidth: 10, padding: 12 } },
+    },
+    scales: {
+      x: {
+        ticks: { color: c.muted, font: { size: 10, family: 'Barlow' }, maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+        grid:  { color: c.grid },
+      },
+      y: {
+        min: yMin, max: yMax,
+        ticks: { color: c.muted, font: { size: 10, family: 'Barlow' }, stepSize: yStep },
+        grid:  { color: c.grid },
+      },
+    },
+  };
+}
+
+function renderCharts() {
+  if (typeof Chart === 'undefined') return;
+  const entries = [...state.historyEntries].reverse().slice(-60); // oldest→newest, max 60
+  if (!entries.length) return;
+
+  destroyCharts();
+
+  const labels = entries.map(e => {
+    const d = new Date(e.date + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  const c = chartColors();
+
+  // ── Mood chart ──
+  const moodCanvas = $('chart-mood');
+  if (moodCanvas) {
+    chartInstances['mood'] = new Chart(moodCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Happiness', data: entries.map(e => e.happiness), borderColor: c.wellness, backgroundColor: 'rgba(52,211,153,0.08)', tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: c.wellness },
+          { label: 'Stress',    data: entries.map(e => e.stress),    borderColor: c.danger,   backgroundColor: 'rgba(248,113,113,0.08)', tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: c.danger },
+        ],
+      },
+      options: { ...baseChartOptions(1, 5, 1) },
+    });
+  }
+
+  // ── Exercise chart ──
+  const exCanvas = $('chart-exercise');
+  if (exCanvas) {
+    const maxEx = Math.max(...entries.map(e => Math.max(e.pushups_done, e.squats_done)), 10);
+    chartInstances['exercise'] = new Chart(exCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Pushups', data: entries.map(e => e.pushups_done), backgroundColor: 'rgba(251,146,60,0.75)', borderColor: c.energy,  borderWidth: 1, borderRadius: 3 },
+          { label: 'Squats',  data: entries.map(e => e.squats_done),  backgroundColor: 'rgba(244,114,182,0.75)', borderColor: c.custom, borderWidth: 1, borderRadius: 3 },
+        ],
+      },
+      options: { ...baseChartOptions(0, undefined, undefined) },
+    });
+  }
+
+  // ── Hydration chart ──
+  const hydCanvas = $('chart-hydration');
+  if (hydCanvas) {
+    chartInstances['hydration'] = new Chart(hydCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Water',   data: entries.map(e => e.water_bottles), backgroundColor: 'rgba(56,189,248,0.75)',  borderColor: c.accent,  borderWidth: 1, borderRadius: 3 },
+          { label: 'Coffee',  data: entries.map(e => e.coffee),         backgroundColor: 'rgba(251,191,36,0.75)',  borderColor: c.warning, borderWidth: 1, borderRadius: 3 },
+          { label: 'Alcohol', data: entries.map(e => e.alcohol),        backgroundColor: 'rgba(167,139,250,0.75)', borderColor: c.mindset, borderWidth: 1, borderRadius: 3 },
+        ],
+      },
+      options: { ...baseChartOptions(0, undefined, 1) },
+    });
+  }
+}
+
+// ─── History ──────────────────────────────────────────────
 async function loadHistory() {
   if (state.historyLoaded) return;
   const [entries, stats] = await Promise.all([
@@ -497,6 +717,8 @@ async function loadHistory() {
   state.historyLoaded = true;
   renderHistory();
   renderStats();
+  // Small delay so canvas is visible before Chart.js measures it
+  setTimeout(renderCharts, 50);
 }
 
 function renderStats() {
