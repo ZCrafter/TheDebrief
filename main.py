@@ -420,18 +420,29 @@ def get_stats():
         ROUND(AVG(stress), 2)    as avg_stress
         FROM entries ORDER BY date DESC LIMIT 7""").fetchone()
 
-    # Streak (consecutive days with an entry)
+    # Streak: consecutive days with an entry (today or yesterday as start)
     dates = [r[0] for r in conn.execute("SELECT date FROM entries ORDER BY date DESC").fetchall()]
+
+    from datetime import date, timedelta
+    today = date.today()
     streak = 0
+
     if dates:
-        from datetime import date, timedelta
-        today = date.today()
-        for i, d in enumerate(dates):
-            expected = (today - timedelta(days=i)).isoformat()
-            if d == expected:
-                streak += 1
-            else:
-                break
+        most_recent = dates[0]
+        if most_recent == today.isoformat():
+            base = today
+        elif most_recent == (today - timedelta(days=1)).isoformat():
+            base = today - timedelta(days=1)
+        else:
+            base = None  # last entry too old
+
+        if base:
+            for i, d in enumerate(dates):
+                expected = (base - timedelta(days=i)).isoformat()
+                if d == expected:
+                    streak += 1
+                else:
+                    break
 
     conn.close()
     return {

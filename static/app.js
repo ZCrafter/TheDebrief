@@ -10,6 +10,7 @@ const state = {
   goals: { pushups: { current_goal: 0, consecutive_hits: 0 }, squats: { current_goal: 0, consecutive_hits: 0 } },
   customFields: [],
   todayEntry: null,
+  editingDate: null,
   historyLoaded: false,
   historyEntries: [],
   stats: null,
@@ -479,7 +480,7 @@ function collectFormData() {
   });
 
   return {
-    date:             todayISO(),
+    date:             state.editingDate || todayISO(),
     water_bottles:    getStepperVal('water_bottles'),
     self_improvement: ($('self-improvement')?.value || '').trim(),
     happiness:        +($('happiness')?.value || 5),
@@ -518,6 +519,12 @@ async function submitEntry(e) {
       renderGoalBanner();
       updateExerciseFeedback('pushups', data.pushups_done);
       updateExerciseFeedback('squats',  data.squats_done);
+    }
+
+    // If editing a past entry, exit edit mode
+    if (state.editingDate) {
+      state.editingDate = null;
+      $('edit-banner').style.display = 'none';
     }
 
     $('last-saved-note').textContent = 'Saved just now ✓';
@@ -753,8 +760,8 @@ function renderHistory() {
       </div>
       <div class="hc-divider"></div>
       <div class="hc-stats">
-        <div class="hc-stat"><span class="hc-stat-val">${mood}/10</span><span class="hc-stat-lbl">Happy</span></div>
-        <div class="hc-stat"><span class="hc-stat-val">${str}/10</span><span class="hc-stat-lbl">Stress</span></div>
+        <div class="hc-stat"><span class="hc-stat-val">${mood}/5</span><span class="hc-stat-lbl">Happy</span></div>
+        <div class="hc-stat"><span class="hc-stat-val">${str}/5</span><span class="hc-stat-lbl">Stress</span></div>
         <div class="hc-stat"><span class="hc-stat-val">${water}</span><span class="hc-stat-lbl">Water</span></div>
         <div class="hc-stat"><span class="hc-stat-val">${pu}</span><span class="hc-stat-lbl">Pushups</span></div>
         <div class="hc-stat"><span class="hc-stat-val">${sq}</span><span class="hc-stat-lbl">Squats</span></div>
@@ -776,6 +783,11 @@ async function openEntryModal(date) {
 
   $('modal-title').textContent = fmtDate(date);
   $('modal-body').innerHTML = buildModalBody(entry);
+
+  // Wire up the edit button rendered inside buildModalBody
+  const editBtn = $('modal-edit-btn');
+  if (editBtn) editBtn.addEventListener('click', () => startEditingEntry(date, entry));
+
   $('modal-overlay').removeAttribute('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -783,8 +795,8 @@ async function openEntryModal(date) {
 function buildModalBody(e) {
   const boolIcon = v => v ? '✓ Yes' : '— No';
   let html = `<div class="detail-grid">
-    <div class="detail-item"><div class="detail-label">Happiness</div><div class="detail-value">${e.happiness}/10</div></div>
-    <div class="detail-item"><div class="detail-label">Stress</div><div class="detail-value">${e.stress}/10</div></div>
+    <div class="detail-item"><div class="detail-label">Happiness</div><div class="detail-value">${e.happiness}/5</div></div>
+    <div class="detail-item"><div class="detail-label">Stress</div><div class="detail-value">${e.stress}/5</div></div>
     <div class="detail-item"><div class="detail-label">Water</div><div class="detail-value">${e.water_bottles} btl</div></div>
     <div class="detail-item"><div class="detail-label">Coffee</div><div class="detail-value">${e.coffee} cups</div></div>
     <div class="detail-item"><div class="detail-label">Alcohol</div><div class="detail-value">${e.alcohol} drk</div></div>
@@ -810,8 +822,49 @@ function buildModalBody(e) {
     html += `<div class="detail-label" style="margin-bottom:0.4rem">Notes:</div>
              <div class="detail-text">${escHtml(e.notes)}</div>`;
   }
+
+  html += `<div style="margin-top:1rem">
+    <button id="modal-edit-btn" class="submit-btn" style="height:44px;font-size:0.85rem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span class="submit-text">Edit This Entry</span>
+    </button>
+  </div>`;
+
   return html;
 }
+
+// ─── Edit Past Entry ──────────────────────────────────────
+function startEditingEntry(date, entry) {
+  closeModal();
+  state.editingDate = date;
+
+  // Show edit banner
+  const banner = $('edit-banner');
+  $('edit-banner-date').textContent = fmtDate(date);
+  banner.style.display = '';
+
+  // Populate form and switch tab
+  populateForm(entry);
+  renderCustomFieldInputs();  // re-render with saved custom data
+  switchTab('today');
+  $('tab-container').scrollTop = 0;
+  $('submit-btn').querySelector('.submit-text').textContent = 'Save Changes';
+}
+
+window.cancelEdit = function() {
+  state.editingDate = null;
+  $('edit-banner').style.display = 'none';
+  $('submit-btn').querySelector('.submit-text').textContent = 'Save Today\'s Entry';
+  // Restore today's data
+  loadTodayEntry().then(() => {
+    if (state.todayEntry) {
+      populateForm(state.todayEntry);
+    } else {
+      resetFormToDefaults();
+    }
+    renderCustomFieldInputs();
+  });
+};
 
 function closeModal() {
   $('modal-overlay').setAttribute('hidden', '');
