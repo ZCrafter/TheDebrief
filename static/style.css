@@ -59,6 +59,12 @@
   --custom:       #f472b6;
   --custom-glow:  rgba(244,114,182,0.18);
 
+  --health:       #fb7185;
+  --health-glow:  rgba(251,113,133,0.18);
+
+  --neutral:      #94a3b8;
+  --neutral-glow: rgba(148,163,184,0.12);
+
   --water:        #38bdf8;
   --water-glow:   rgba(56,189,248,0.18);
 
@@ -101,6 +107,12 @@
   --custom:       #db2777;
   --custom-glow:  rgba(219,39,119,0.12);
 
+  --health:       #e11d48;
+  --health-glow:  rgba(225,29,72,0.10);
+
+  --neutral:      #64748b;
+  --neutral-glow: rgba(100,116,139,0.10);
+
   --water:        #0284c7;
   --water-glow:   rgba(2,132,199,0.12);
 
@@ -119,6 +131,9 @@
 [data-accent="mindset"] { --section-accent: var(--mindset); --section-glow: var(--mindset-glow); }
 [data-accent="energy"]  { --section-accent: var(--energy);  --section-glow: var(--energy-glow);  }
 [data-accent="custom"]  { --section-accent: var(--custom);  --section-glow: var(--custom-glow);  }
+[data-accent="health"]  { --section-accent: var(--health);  --section-glow: var(--health-glow);  }
+[data-accent="wellness"]{ --section-accent: var(--wellness);--section-glow: var(--wellness-glow);}
+[data-accent="neutral"] { --section-accent: var(--neutral); --section-glow: var(--neutral-glow); }
 [data-accent="notes"]   { --section-accent: var(--text-dim);--section-glow: rgba(148,163,184,0.1); }
 
 /* ── Reset ──────────────────────────────────────────────── */
@@ -1081,6 +1096,107 @@ input[type="range"].slider::-moz-range-thumb {
 }
 .detail-full {
   grid-column: span 2;
+}
+
+/* ── Collapsible Groups ───────────────────────────────────── */
+.section-header.collapsible { cursor: pointer; user-select: none; }
+.section-header.collapsible:active { opacity: 0.75; }
+.collapse-chevron {
+  margin-left: auto;
+  color: var(--text-muted);
+  transition: transform 0.25s var(--ease);
+  flex-shrink: 0;
+}
+.form-section.collapsed .collapse-chevron { transform: rotate(-90deg); }
+.collapsible-body {
+  overflow: hidden;
+  max-height: 9999px;
+  transition: max-height 0.3s var(--ease), opacity 0.25s;
+  opacity: 1;
+}
+.form-section.collapsed .collapsible-body {
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Color Swatches ───────────────────────────────────────── */
+.color-swatches {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+.color-swatch {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s;
+}
+.color-swatch:hover  { transform: scale(1.15); }
+.color-swatch.active { border-color: var(--text); }
+.swatch-water   { background: var(--water); }
+.swatch-mindset { background: var(--mindset); }
+.swatch-energy  { background: var(--energy); }
+.swatch-wellness{ background: var(--wellness); }
+.swatch-health  { background: var(--health); }
+.swatch-custom  { background: var(--custom); }
+.swatch-warning { background: var(--warning); }
+.swatch-neutral { background: var(--neutral); }
+
+/* ── Group Settings Card ─────────────────────────────────── */
+.group-setting-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: .65rem .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.gsc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.gsc-name {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+.gsc-collapsed-toggle {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ── Custom Exercise List ────────────────────────────────── */
+.exercise-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: .5rem;
+}
+.exercise-list-item:last-child { border-bottom: none; }
+.eli-name {
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+.eli-goal {
+  font-family: var(--font-display);
+  font-size: .8rem;
+  color: var(--energy);
+  font-weight: 600;
 }
 
 /* ── Responsive desktop tweaks ───────────────────────────── */
