@@ -8,7 +8,8 @@ services:
     ports:
       - "5400:5400"
     volumes:
-      - health-tracker-data:/data
+      - health-tracker-data:/data          # persistent SQLite database
+      - ./static:/app/static:ro            # live static files — no rebuild needed
     environment:
       - DATABASE_PATH=/data/health_tracker.db
     healthcheck:
