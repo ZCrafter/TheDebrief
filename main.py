@@ -514,12 +514,13 @@ def get_group_settings():
 @app.put("/api/group-settings")
 def upsert_group_setting(update: GroupSettingUpdate):
     conn = get_db()
+    # INSERT OR REPLACE is compatible with all SQLite versions (3.24+ ON CONFLICT is not)
     conn.execute(
-        """INSERT INTO group_settings (group_name, color, collapsed_by_default)
-           VALUES (?, ?, ?)
-           ON CONFLICT(group_name) DO UPDATE SET
-               color=excluded.color,
-               collapsed_by_default=excluded.collapsed_by_default""",
+        "DELETE FROM group_settings WHERE group_name = ?",
+        (update.group_name,),
+    )
+    conn.execute(
+        "INSERT INTO group_settings (group_name, color, collapsed_by_default) VALUES (?, ?, ?)",
         (update.group_name, update.color, int(update.collapsed_by_default)),
     )
     conn.commit()
