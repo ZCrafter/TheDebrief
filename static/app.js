@@ -276,6 +276,16 @@ window.applyGoalOverride = async function(exercise) {
 };
 
 // ─── Custom Fields ────────────────────────────────────────
+
+// Maps group name → the extra-fields slot id inside a built-in section
+const BUILTIN_GROUP_SLOTS = {
+  'Hydration & Intake': 'extra-fields-hydration',
+  'Mindset':            'extra-fields-mindset',
+  'Health':             'extra-fields-health',
+  'Movement':           'extra-fields-movement',
+  'Notes':              'extra-fields-notes',
+};
+
 async function loadCustomFields() {
   state.customFields = await API.get('/api/custom-fields') || [];
   renderCustomFieldInputs();
@@ -284,29 +294,56 @@ async function loadCustomFields() {
 }
 
 function renderCustomFieldInputs() {
-  const container = $('custom-fields-container');
-  if (!container) return;
-  if (!state.customFields.length) { container.innerHTML = ''; return; }
-
-  // Group fields
-  const groups = {};
-  state.customFields.forEach(f => {
-    const g = f.group_name || 'Custom';
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(f);
+  // Clear all built-in slots first
+  Object.values(BUILTIN_GROUP_SLOTS).forEach(slotId => {
+    const el = $(slotId);
+    if (el) el.innerHTML = '';
   });
 
-  const iconMap = {
-    'Mindset':'🧠','Movement':'🏋️','Sleep':'🌙','Nutrition':'🥗',
-    'Health':'🩺','Hydration & Intake':'💧','Custom':'✦',
-  };
+  const container = $('custom-fields-container');
+  if (container) container.innerHTML = '';
+  if (!state.customFields.length) return;
 
-  container.innerHTML = Object.entries(groups).map(([groupName, fields]) => {
+  // Split fields: built-in-slot fields vs standalone custom-group fields
+  const builtinFields = {};   // slotId → [fields]
+  const customGroups  = {};   // groupName → [fields]
+
+  state.customFields.forEach(f => {
+    const g      = f.group_name || 'Custom';
+    const slotId = BUILTIN_GROUP_SLOTS[g];
+    if (slotId) {
+      if (!builtinFields[slotId]) builtinFields[slotId] = [];
+      builtinFields[slotId].push(f);
+    } else {
+      if (!customGroups[g]) customGroups[g] = [];
+      customGroups[g].push(f);
+    }
+  });
+
+  // ── Inject into built-in section slots ──
+  Object.entries(builtinFields).forEach(([slotId, fields]) => {
+    const slot = $(slotId);
+    if (!slot) return;
+    slot.innerHTML = fields.map(f => {
+      const savedVal = state.todayEntry?.custom_data?.[f.field_key];
+      return `<div class="custom-input-row" data-key="${f.field_key}">
+        <label class="field-label">${escHtml(f.name)}${f.unit ? ` <span class="field-unit">${escHtml(f.unit)}</span>` : ''}</label>
+        ${buildCustomInput(f, savedVal)}
+      </div>`;
+    }).join('');
+    wireSlot(slot);
+  });
+
+  // ── Render standalone custom groups ──
+  if (!container || !Object.keys(customGroups).length) return;
+
+  const iconMap = { 'Sleep':'🌙','Nutrition':'🥗','Custom':'✦' };
+
+  container.innerHTML = Object.entries(customGroups).map(([groupName, fields]) => {
     const gs      = getGroupSetting(groupName);
     const accent  = accentForColor(gs.color);
     const icon    = iconMap[groupName] || '✦';
     const isCollapsedDefault = !!gs.collapsed_by_default;
-    // use session override if set, else use default
     const isCollapsed = state.collapseState[groupName] !== undefined
       ? state.collapseState[groupName]
       : isCollapsedDefault;
@@ -340,7 +377,11 @@ function renderCustomFieldInputs() {
     });
   });
 
-  // Wire ratings and custom steppers
+  wireSlot(container);
+}
+
+// Wire up rating stars and custom steppers inside any container
+function wireSlot(container) {
   state.customFields.forEach(f => {
     if (f.field_type === 'rating') {
       const row = container.querySelector(`.rating-stars[data-custom-key="${f.field_key}"]`);
@@ -420,16 +461,21 @@ function renderGroupSettingsUI() {
   const container = $('group-settings-list');
   if (!container) return;
 
-  // Collect all group names from custom fields
-  const groupNames = [...new Set(state.customFields.map(f => f.group_name || 'Custom'))];
+  // Only show standalone custom groups (built-in sections handle their own styling)
+  const groupNames = [...new Set(
+    state.customFields
+      .map(f => f.group_name || 'Custom')
+      .filter(g => !BUILTIN_GROUP_SLOTS[g])
+  )];
+
   if (!groupNames.length) {
-    container.innerHTML = '<p class="empty-note">Add custom fields to see groups here.</p>';
+    container.innerHTML = '<p class="empty-note">Add custom fields to a non-built-in group to customise it here.</p>';
     return;
   }
 
   container.innerHTML = groupNames.map(gname => {
-    const gs      = getGroupSetting(gname);
-    const color   = gs.color || 'custom';
+    const gs        = getGroupSetting(gname);
+    const color     = gs.color || 'custom';
     const collapsed = !!gs.collapsed_by_default;
     return `<div class="group-setting-card" data-group="${escHtml(gname)}">
       <div class="gsc-top">
@@ -448,29 +494,40 @@ function renderGroupSettingsUI() {
     </div>`;
   }).join('');
 
-  // Wire color swatches
+  // Wire color swatches — with error handling
   container.querySelectorAll('.color-swatch').forEach(sw => {
     sw.addEventListener('click', async () => {
-      const gname  = sw.dataset.group;
-      const color  = sw.dataset.color;
-      const card   = container.querySelector(`[data-group="${gname}"]`);
-      const cb     = card?.querySelector('.gsc-collapse-cb');
-      await saveGroupSetting(gname, color, cb?.checked || false);
-      renderGroupSettingsUI();
-      renderCustomFieldInputs(); // refresh section colors
-      showToast(`${gname} color updated`, 'success');
+      const gname = sw.dataset.group;
+      const color = sw.dataset.color;
+      const card  = container.querySelector(`.group-setting-card[data-group="${gname}"]`);
+      const cb    = card?.querySelector('.gsc-collapse-cb');
+      // Optimistic UI update
+      card?.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === color));
+      try {
+        await saveGroupSetting(gname, color, cb?.checked || false);
+        renderCustomFieldInputs();
+        showToast(`${gname} color updated`, 'success');
+      } catch(e) {
+        showToast('Failed to save color — check server logs', 'error');
+        renderGroupSettingsUI(); // revert optimistic update
+      }
     });
   });
 
-  // Wire collapse checkboxes
+  // Wire collapse checkboxes — with error handling
   container.querySelectorAll('.gsc-collapse-cb').forEach(cb => {
     cb.addEventListener('change', async () => {
-      const gname = cb.dataset.group;
-      const card  = container.querySelector(`[data-group="${gname}"]`);
+      const gname      = cb.dataset.group;
+      const card       = container.querySelector(`.group-setting-card[data-group="${gname}"]`);
       const activeSwatch = card?.querySelector('.color-swatch.active');
-      const color = activeSwatch?.dataset.color || 'custom';
-      await saveGroupSetting(gname, color, cb.checked);
-      showToast(`${gname} ${cb.checked ? 'collapsed' : 'expanded'} by default`);
+      const color      = activeSwatch?.dataset.color || 'custom';
+      try {
+        await saveGroupSetting(gname, color, cb.checked);
+        showToast(`${gname} will ${cb.checked ? 'start collapsed' : 'start expanded'}`, 'success');
+      } catch(e) {
+        cb.checked = !cb.checked; // revert checkbox
+        showToast('Failed to save setting — check server logs', 'error');
+      }
     });
   });
 }
