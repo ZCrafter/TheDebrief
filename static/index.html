@@ -99,6 +99,7 @@
               <button type="button" class="step-btn step-up">+</button>
             </div>
           </div>
+          <div id="extra-fields-hydration"></div>
         </div>
 
         <!-- ─ Mindset ─ -->
@@ -125,6 +126,7 @@
             <div class="slider-ticks"><span>1</span><span>3</span><span>5</span></div>
             <div class="slider-mood-label" id="stress-label">Average</div>
           </div>
+          <div id="extra-fields-mindset"></div>
         </div>
 
         <!-- ─ Health ─ -->
@@ -137,6 +139,7 @@
             <label class="field-label" for="health-notes">Anything bothering you today?</label>
             <textarea id="health-notes" name="health_notes" rows="3" placeholder="Aches, pains, symptoms, energy levels…" class="textarea"></textarea>
           </div>
+          <div id="extra-fields-health"></div>
         </div>
 
         <!-- ─ Movement (dynamic — rendered by JS) ─ -->
@@ -153,6 +156,7 @@
             </label>
           </div>
           <div id="exercise-inputs"></div>
+          <div id="extra-fields-movement"></div>
         </div>
 
         <!-- ─ Custom Fields (grouped, injected by JS) ─ -->
@@ -165,6 +169,7 @@
             <span class="section-title">Notes</span>
           </div>
           <textarea id="notes" name="notes" rows="2" placeholder="Anything else worth noting…" class="textarea"></textarea>
+          <div id="extra-fields-notes"></div>
         </div>
 
         <!-- Submit -->
@@ -259,7 +264,18 @@
             <input type="text" id="new-field-unit" class="text-input small" placeholder="Unit" maxlength="10" />
           </div>
           <input type="text" id="new-field-group" class="text-input" placeholder="Section / Group name" maxlength="40" list="group-suggestions" />
-          <datalist id="group-suggestions"><option value="Mindset"><option value="Movement"><option value="Sleep"><option value="Nutrition"><option value="Custom"></datalist>
+          <input type="text" id="new-field-slug" class="text-input" placeholder="NFC slug (optional, e.g. garbage, dishwasher)" maxlength="40" />
+          <p style="font-size:.72rem;color:var(--text-muted);margin-top:-.3rem;padding:0 .1rem">Slug becomes the tap URL: /api/quick-log/<em>slug</em></p>
+          <datalist id="group-suggestions">
+            <option value="Hydration &amp; Intake">
+            <option value="Mindset">
+            <option value="Health">
+            <option value="Movement">
+            <option value="Notes">
+            <option value="Sleep">
+            <option value="Nutrition">
+            <option value="Custom">
+          </datalist>
           <div class="add-field-actions">
             <button type="button" class="pill-btn" id="save-field-btn">Add Field</button>
             <button type="button" class="pill-btn ghost" id="cancel-field-btn">Cancel</button>
@@ -336,6 +352,10 @@
         <input type="text" id="edit-field-unit" class="text-input" maxlength="10" /></div>
       <div><label class="field-label" style="display:block;margin-bottom:.35rem">Group</label>
         <input type="text" id="edit-field-group" class="text-input" maxlength="40" list="group-suggestions" /></div>
+      <div><label class="field-label" style="display:block;margin-bottom:.35rem">NFC Slug <span class="field-unit">(optional)</span></label>
+        <input type="text" id="edit-field-slug" class="text-input" maxlength="40" placeholder="e.g. garbage, dishwasher" />
+        <p style="font-size:.72rem;color:var(--text-muted);margin-top:.3rem">Tap URL: <span id="edit-field-slug-preview" style="color:var(--accent)"></span></p>
+      </div>
       <button type="button" class="submit-btn" id="edit-field-save" style="height:44px;font-size:.88rem">
         <span>Save Changes</span>
       </button>
