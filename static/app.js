@@ -436,18 +436,24 @@ function renderCustomFieldsList() {
     list.innerHTML = '<p class="empty-note">No custom fields yet.</p>';
     return;
   }
-  list.innerHTML = state.customFields.map(f => `
-    <div class="custom-field-chip">
+  list.innerHTML = state.customFields.map(f => {
+    const slugHtml = f.quick_log_slug
+      ? `<div style="font-size:.68rem;color:var(--accent);margin-top:.2rem">
+           📡 /api/quick-log/${escHtml(f.quick_log_slug)}
+         </div>`
+      : '';
+    return `<div class="custom-field-chip">
       <div class="chip-info">
         <span class="chip-name">${escHtml(f.name)}${f.unit ? ` <span class="field-unit">${escHtml(f.unit)}</span>` : ''}</span>
         <span class="chip-meta">${f.field_type} · ${escHtml(f.group_name || 'Custom')}</span>
+        ${slugHtml}
       </div>
       <div style="display:flex;gap:.35rem;flex-shrink:0">
-        <button class="chip-delete" style="color:var(--accent);font-size:.75rem;padding:0 .4rem" data-id="${f.id}" title="Edit" data-action="edit">✎</button>
+        <button class="chip-delete" style="color:var(--accent);font-size:.75rem;padding:0 .4rem" data-id="${f.id}" data-action="edit" title="Edit">✎</button>
         <button class="chip-delete" data-id="${f.id}" data-action="delete" title="Remove">✕</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   list.querySelectorAll('[data-action="delete"]').forEach(btn =>
     btn.addEventListener('click', () => deleteCustomField(+btn.dataset.id))
@@ -537,14 +543,15 @@ async function addCustomField() {
   const type  = $('new-field-type').value;
   const unit  = $('new-field-unit').value.trim();
   const group = $('new-field-group').value.trim() || 'Custom';
+  const slug  = $('new-field-slug').value.trim();
   if (!name) { showToast('Enter a field name', 'error'); return; }
   try {
-    await API.post('/api/custom-fields', { name, field_type: type, unit, group_name: group });
-    $('new-field-name').value = $('new-field-unit').value = $('new-field-group').value = '';
+    await API.post('/api/custom-fields', { name, field_type: type, unit, group_name: group, quick_log_slug: slug });
+    $('new-field-name').value = $('new-field-unit').value = $('new-field-group').value = $('new-field-slug').value = '';
     $('add-field-form').style.display = 'none';
     await loadCustomFields();
     showToast(`"${name}" added to ${group}`, 'success');
-  } catch(e) { showToast('Failed to add field', 'error'); }
+  } catch(e) { showToast('Failed to add field — slug may already be in use', 'error'); }
 }
 
 async function deleteCustomField(id) {
@@ -561,8 +568,17 @@ function openEditFieldModal(id) {
   $('edit-field-name').value  = field.name;
   $('edit-field-unit').value  = field.unit || '';
   $('edit-field-group').value = field.group_name || 'Custom';
+  $('edit-field-slug').value  = field.quick_log_slug || '';
+  updateSlugPreview(field.quick_log_slug || '');
   $('edit-field-modal').removeAttribute('hidden');
   document.body.style.overflow = 'hidden';
+}
+
+function updateSlugPreview(slug) {
+  const preview = $('edit-field-slug-preview');
+  if (!preview) return;
+  const clean = slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  preview.textContent = clean ? `${window.location.origin}/api/quick-log/${clean}` : '—';
 }
 
 async function saveEditField() {
@@ -570,14 +586,15 @@ async function saveEditField() {
   const name  = $('edit-field-name').value.trim();
   const unit  = $('edit-field-unit').value.trim();
   const group = $('edit-field-group').value.trim() || 'Custom';
+  const slug  = $('edit-field-slug').value.trim();
   if (!name) { showToast('Name required', 'error'); return; }
   try {
-    await API.put(`/api/custom-fields/${id}`, { name, unit, group_name: group });
+    await API.put(`/api/custom-fields/${id}`, { name, unit, group_name: group, quick_log_slug: slug });
     $('edit-field-modal').setAttribute('hidden', '');
     document.body.style.overflow = '';
     await loadCustomFields();
     showToast('Field updated', 'success');
-  } catch(e) { showToast('Failed to update field', 'error'); }
+  } catch(e) { showToast('Failed — slug may already be in use', 'error'); }
 }
 
 // ─── Load Today's Entry ───────────────────────────────────
@@ -1101,6 +1118,7 @@ function setupEventListeners() {
   $('edit-field-close').addEventListener('click', () => closeModal('edit-field-modal'));
   $('edit-field-modal').addEventListener('click', e => { if(e.target===$('edit-field-modal')) closeModal('edit-field-modal'); });
   $('edit-field-save').addEventListener('click', saveEditField);
+  $('edit-field-slug')?.addEventListener('input', e => updateSlugPreview(e.target.value));
 
   // Custom field panel
   $('add-field-btn').addEventListener('click', () => {
